@@ -1079,7 +1079,18 @@ export function Mapper({
                     إلغاء الربط
                   </button>
                 )}
-                {onPlace && slot.anchor.startsWith("gp_u") && (
+                {onPlace && slot.kind === "checkbox" && (
+                  <button
+                    className="btn small ghost tpl-danger"
+                    onClick={async () => {
+                      if (!window.confirm("حذف هذا المربع من تصميم العميل؟ تبقى كلمة الخيار، ويمكنك التراجع.")) return;
+                      if (await onPlace({ op: "remove", anchor: slot.anchor, part: slot.part, paragraph: 0, offset: 0 })) setSelected(null);
+                    }}
+                  >
+                    حذف المربع
+                  </button>
+                )}
+                {onPlace && slot.anchor.startsWith("gp_u") && slot.kind !== "checkbox" && (
                   <button
                     className="btn small ghost tpl-danger"
                     onClick={async () => {
