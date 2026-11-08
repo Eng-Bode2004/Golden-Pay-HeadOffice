@@ -1,38 +1,33 @@
-# Golden Pay — glass workspace
+# Golden Pay — Head Office dashboard
 
-Arabic RTL React dashboard, styled with frosted panels, floating navigation,
-muted bronze/charcoal surfaces and blue actions. Data comes from the existing
-Identity & Access service; metrics and activity are not mocked.
+Arabic RTL React dashboard for Golden Pay Head Office: attendance and absences, payroll
+and salaries, staff, expenses, complaints, rules, and client report templates. Data comes
+from the live Golden Pay backend; nothing is mocked.
 
 ## Local development
 
-From `Dashboard/`:
+From the repository root:
 
 ```sh
-bun install
-bun run dev
+npm ci
+npm run dev
 ```
 
-Open http://127.0.0.1:4100 (Admin), or run `bun run dev:office` for the Head Office
-dashboard on http://127.0.0.1:4150. Vite proxies `/api/*` to the live backend on
-Thalmet Cloud; set `IDENTITY_API_URL=http://127.0.0.1:4001` to use a local backend, and
-`PORT` / `OFFICE_PORT` to change the dashboard ports.
+Open http://127.0.0.1:4150. Vite proxies `/api/*` to the live backend on Thalmet Cloud;
+set `IDENTITY_API_URL=http://127.0.0.1:4001` to use a local backend, and `PORT` to change
+the port.
 
-## Deploying as static websites
+## Deploying as a static website
 
-This one codebase holds both dashboards. The same code is published to two repositories,
-Golden-Pay-AdminDashboard and Golden-Pay-HeadOffice; each site uses its own build:
+| Install | Build command | Output folder |
+|---|---|---|
+| `npm ci` | `npm run build` | `dist` |
 
-| Site | Install | Build command | Output folder |
-|---|---|---|---|
-| Admin dashboard | `npm ci` | `npm run build:admin` | `dist` |
-| Head Office dashboard | `npm ci` | `npm run build:office` | `dist-headoffice` |
-
-(`npm run build` builds both.) The sites call the backend at `VITE_API_URL`, set in
-`.env.production` to the live backend. Pages use addresses like `/templates/…`, so the
-host must answer unknown paths with `index.html`: each build includes `404.html` and a
-`_redirects` file for hosts that use them; otherwise turn on the host's single-page-app
-fallback. Add both sites' domains to the backend's `CORS_ORIGINS`.
+The site calls the backend at `VITE_API_URL`, set in `.env.production` to the live
+backend. Pages use addresses like `/templates/…`, so the host must answer unknown paths
+with `index.html`: the build includes `404.html` and a `_redirects` file for hosts that
+use them; otherwise turn on the host's single-page-app fallback. Add the site's domain to
+the backend's `CORS_ORIGINS`.
 
 ## Appearance and language
 
@@ -173,11 +168,9 @@ source asset `https://images.unsplash.com/photo-1497366754035-f200968a6e72`, sto
 locally as `public/workspace.jpg`. The decorative scene uses no remote image request
 at runtime. The brand mark and interface icons are code-drawn SVGs.
 
-## Head office dashboard
+## Pages
 
-A second app in this project for accounts with the `head_office` role, using the same
-sign-in screen, themes and translations. `bun run dev:office` serves it on port 4150 and
-`bun run build` builds both apps (`dist/` and `dist-headoffice/`). Pages: business
+For accounts with the `head_office` role. Pages: business
 overview (revenue, salaries, expenses, net profit, six-month trend, most effective admins
 and investigators), staff with a full profile per person (attendance calendar, points,
 give or remove points, salary and adjustments), daily attendance, payroll, expenses,

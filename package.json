@@ -1,16 +1,12 @@
 {
-  "name": "golden-pay-dashboard",
+  "name": "golden-pay-headoffice",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1 --port 4100",
-    "build": "tsc --noEmit && vite build && vite build --config vite.headoffice.config.ts",
-    "check:locales": "node scripts/check-locales.cjs",
-    "preview": "vite preview --host 127.0.0.1 --port 4100",
-    "dev:office": "vite --config vite.headoffice.config.ts",
-    "build:office": "tsc --noEmit && vite build --config vite.headoffice.config.ts",
-    "preview:office": "vite preview --config vite.headoffice.config.ts --host 127.0.0.1 --port 4150",
-    "build:admin": "tsc --noEmit && vite build"
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 4150",
+    "check:locales": "node scripts/check-locales.cjs"
   },
   "dependencies": {
     "leaflet": "1.9.4",
