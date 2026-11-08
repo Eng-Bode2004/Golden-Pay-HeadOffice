@@ -444,6 +444,9 @@ export function Mapper({
     if (mode === "edit") {
       const image = (event.target as HTMLElement).closest<HTMLElement>("[data-img]");
       if (!image || !editing) return;
+      // Inside a text box the words are selected and typed as usual; the frame's edge drags it.
+      const words = (event.target as HTMLElement).closest("[data-p]");
+      if (words && image.contains(words)) return;
       event.preventDefault();
       drag.current = { kind: "picture", picture: image.dataset.img!, startX: event.clientX, startY: event.clientY, active: false, label: "صورة" };
       return;
@@ -890,7 +893,7 @@ export function Mapper({
             <ul className="tpl-edit-help">
               <li>حدّد كلمات ← غيّر الحجم أو اجعلها عريضة أو مائلة أو احذفها.</li>
               <li>اضغط مرتين على سطر ← اكتب واحذف فيه، ثم Enter للحفظ أو Esc للإلغاء. Shift+Enter لسطر جديد.</li>
-              <li>اضغط صورة ← كبّرها أو صغّرها أو احذفها. اسحبها لنقلها إلى سطر أو خانة أخرى.</li>
+              <li>اضغط صورة أو مربع نص ← كبّره أو صغّره أو احذفه. اسحبه لنقله إلى سطر أو خانة أخرى.</li>
             </ul>
           </div>
         )}

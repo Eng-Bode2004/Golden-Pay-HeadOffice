@@ -5,6 +5,8 @@ import { usePdfPreview } from "./usePdfPreview";
 
 export interface PictureInfo {
   id: string;
+  /** A picture, or a text box (a frame that holds text). */
+  kind: "picture" | "textbox";
   floating: boolean;
   widthMm: number;
   heightMm: number;
@@ -127,7 +129,7 @@ export function PicturePanel({
   return (
     <div className="tpl-inspector-body">
       <div className="tpl-inspector-head">
-        <span className="tpl-kind">صورة</span>
+        <span className="tpl-kind">{info?.kind === "textbox" ? "مربع نص" : "صورة"}</span>
         <button className="icon-button" onClick={onClose} aria-label="إغلاق">
           <Icon name="close" size={16} />
         </button>
@@ -136,14 +138,27 @@ export function PicturePanel({
       {!info && !error && <p className="tpl-muted">جارٍ قراءة الصورة…</p>}
       {info && (
         <>
-          <h3>{info.floating ? "صورة عائمة" : "صورة داخل السطر"}</h3>
+          <h3>
+            {info.kind === "textbox"
+              ? info.floating
+                ? "مربع نص عائم"
+                : "مربع نص داخل السطر"
+              : info.floating
+                ? "صورة عائمة"
+                : "صورة داخل السطر"}
+          </h3>
+          {info.kind === "textbox" && <p className="tpl-muted">اضغط مرتين على السطر داخل المربع لتكتب فيه. لحذف المربع كله استخدم الزر بالأسفل.</p>}
           <p className="tpl-muted">
             المقاس: {number(Math.round(info.widthMm * pending.factor))} × {number(Math.round(info.heightMm * pending.factor))} مم
             {info.inPlace ? " · جزء من مكان حقل (شعار أو صورة أو ختم)، ويتحرك معه." : ""}
           </p>
           {!readOnly && (
             <div className="tpl-boxes">
-              <p className="tpl-muted">اسحب الصورة في الصفحة لنقلها إلى سطر آخر أو خانة أخرى، كما في Word.</p>
+              <p className="tpl-muted">
+                {info.kind === "textbox"
+                  ? "اسحب المربع من حافته لنقله إلى سطر آخر أو خانة أخرى."
+                  : "اسحب الصورة في الصفحة لنقلها إلى سطر آخر أو خانة أخرى، كما في Word."}
+              </p>
               <div className="tpl-boxes-all">
                 <span>الحجم</span>
                 <div>
@@ -186,11 +201,12 @@ export function PicturePanel({
               <button
                 className="btn small ghost tpl-danger"
                 onClick={async () => {
-                  if (!window.confirm("حذف هذه الصورة من التصميم؟ يمكنك التراجع بعد ذلك.")) return;
+                  const question = info.kind === "textbox" ? "حذف مربع النص هذا من التصميم؟ يمكنك التراجع بعد ذلك." : "حذف هذه الصورة من التصميم؟ يمكنك التراجع بعد ذلك.";
+                  if (!window.confirm(question)) return;
                   if (await api.edit({ op: "picture.delete", picture: id })) onClose();
                 }}
               >
-                حذف الصورة
+                {info.kind === "textbox" ? "حذف مربع النص" : "حذف الصورة"}
               </button>
             </div>
           )}
