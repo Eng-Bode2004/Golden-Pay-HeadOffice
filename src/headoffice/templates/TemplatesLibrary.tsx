@@ -278,8 +278,7 @@ export function UploadDrawer({
                   </div>
                 )}
                 <p className="hint">
-                  تُنشأ مسودة تقترح الحقول وأماكنها في تصميم العميل. لا تُستخدم في أي استعلام قبل مراجعتها واعتمادها من عضو آخر
-                  في الإدارة العليا.
+                  تُنشأ مسودة تقترح الحقول وأماكنها في تصميم العميل. لا تُستخدم في أي استعلام قبل مراجعتها واعتمادها من الإدارة العليا.
                 </p>
               </div>
             </>
@@ -436,7 +435,7 @@ export function TemplatesLibraryPage() {
   const cards: { label: string; value: number | undefined; hint: string; icon: IconName }[] = [
     { label: "قوالب مفعّلة", value: counts?.active, hint: "تستخدمها الاستعلامات الجديدة الآن", icon: "check" },
     { label: "بتصميم العميل نفسه", value: counts?.active_docx, hint: "تقرير يطابق ملف Word المعتمد", icon: "file" },
-    { label: "بانتظار المراجعة", value: counts?.in_review, hint: "يعتمدها عضو آخر في الإدارة العليا", icon: "shield" },
+    { label: "بانتظار المراجعة", value: counts?.in_review, hint: "تعتمدها الإدارة العليا", icon: "shield" },
     { label: "مسودات", value: counts?.drafts, hint: "مستوردة أو قيد التعديل", icon: "history" },
   ];
 
