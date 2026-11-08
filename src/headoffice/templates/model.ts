@@ -145,6 +145,9 @@ export interface Version {
   active_version_id: string | null;
   created_by_name: string | null;
   submitted_by_name: string | null;
+  /** How many page changes can be undone, and the latest one. */
+  undo_steps?: number;
+  last_change?: string | null;
   reviewed_by_name: string | null;
   activated_by_name: string | null;
 }

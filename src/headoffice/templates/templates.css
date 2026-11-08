@@ -405,3 +405,25 @@ html[dir="ltr"] .tpl-toggle.on .tpl-toggle-track i { transform: translateX(16px)
 .tpl-boxes-preview-head .tpl-muted { flex: 1; font-size: 12px; }
 .tpl-boxes-preview iframe { width: 100%; height: 230px; border: 0; border-radius: 8px; background: #fff; transition: opacity 0.2s; }
 .tpl-boxes-preview iframe.loading { opacity: 0.45; }
+
+/* Page editing (Word-like) */
+.tpl-mode-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.tpl-mode-bar .segmented button { display: inline-flex; align-items: center; gap: 6px; }
+.tpl-paper-scroll { position: relative; }
+.tpl-paper-scroll.is-editing .tpl-paper { cursor: text; }
+.tpl-paper-scroll.is-editing .tpl-paper [data-p]:hover { outline: 1px dashed rgba(var(--tint-rgb), 0.45); outline-offset: 2px; border-radius: 3px; }
+.tpl-paper-scroll.is-editing [data-img] { cursor: grab; outline: 1px dashed transparent; transition: outline-color 0.2s; }
+.tpl-paper-scroll.is-editing [data-img]:hover { outline-color: rgba(var(--tint-rgb), 0.8); }
+.tpl-paper [data-img].picked { outline: 2px solid rgb(var(--tint-rgb)) !important; outline-offset: 2px; box-shadow: 0 0 0 6px rgba(var(--tint-rgb), 0.18); }
+.tpl-paper-scroll.is-editing .slot { pointer-events: auto; cursor: text; }
+.tpl-format-bar { position: absolute; z-index: 30; transform: translateX(-50%); display: flex; align-items: center; gap: 4px; padding: 5px 6px; border-radius: 12px; box-shadow: 0 14px 40px -12px rgba(0, 0, 0, 0.7); white-space: nowrap; }
+.tpl-format-bar select { height: 30px; padding: 0 6px; border-radius: 8px; border: 1px solid var(--line-strong); background: rgba(0, 0, 0, 0.25); color: inherit; font: inherit; }
+.tpl-format-bar button { min-width: 30px; height: 30px; padding: 0 8px; border-radius: 8px; border: 1px solid transparent; background: rgba(255, 255, 255, 0.05); color: inherit; font: 600 13px/1 system-ui, sans-serif; cursor: pointer; }
+.tpl-format-bar button:hover { border-color: var(--line-strong); }
+.tpl-format-bar button.on { background: rgba(var(--tint-rgb), 0.35); border-color: rgba(var(--tint-rgb), 0.7); }
+.tpl-format-bar button.danger { color: #ff8a80; font-family: inherit; }
+.tpl-format-bar button:disabled { opacity: 0.5; cursor: progress; }
+.tpl-line-editor { position: absolute; z-index: 31; box-sizing: border-box; padding: 4px 8px; resize: vertical; border: 2px solid rgb(var(--tint-rgb)); border-radius: 6px; background: #fffef6; color: #1d1b17; font-family: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif; line-height: 1.6; box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.6); outline: none; }
+.tpl-picture-pad { display: grid; grid-template-columns: repeat(4, 40px); gap: 6px; justify-content: center; }
+.tpl-picture-pad .icon-button { font: 600 16px/1 system-ui, sans-serif; direction: ltr; }
+.tpl-edit-help { margin: 8px 0 0; padding-inline-start: 18px; display: grid; gap: 6px; font-size: 12.5px; line-height: 1.6; text-align: start; }

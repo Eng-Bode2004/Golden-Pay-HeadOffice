@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon, type IconName, number } from "../../components/ui";
 import { BoxSpacing, type BoxSpacingApi } from "./BoxSpacing";
+import { type PageEditorApi, PicturePanel } from "./PicturePanel";
 import {
   ACTIONS,
   ACTIONS_FOR_SLOT,
@@ -48,6 +49,52 @@ const NEW_POINTS: { kind: NewKind; label: string; icon: IconName }[] = [
   { kind: "checkbox", label: "مربع اختيار", icon: "check" },
 ];
 
+/**
+ * What changed between two versions of a line, as separate replacements (offsets in the old
+ * line), so the words between two changes keep their own formatting.
+ */
+function changesBetween(before: string, after: string): { offset: number; end: number; text: string }[] {
+  let start = 0;
+  while (start < before.length && start < after.length && before[start] === after[start]) start += 1;
+  let tail = 0;
+  while (tail < before.length - start && tail < after.length - start && before[before.length - 1 - tail] === after[after.length - 1 - tail]) tail += 1;
+  const a = before.slice(start, before.length - tail);
+  const b = after.slice(start, after.length - tail);
+  const whole = [{ offset: start, end: before.length - tail, text: b }];
+  if (!a.length || !b.length || a.length * b.length > 250_000) return whole;
+  // Longest common subsequence, then the runs of characters outside it.
+  const n = a.length;
+  const m = b.length;
+  const table = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+  for (let i = n - 1; i >= 0; i -= 1) {
+    for (let j = m - 1; j >= 0; j -= 1) {
+      table[i]![j] = a[i] === b[j] ? table[i + 1]![j + 1]! + 1 : Math.max(table[i + 1]![j]!, table[i]![j + 1]!);
+    }
+  }
+  const out: { offset: number; end: number; text: string }[] = [];
+  let current: { offset: number; end: number; text: string } | null = null;
+  let i = 0;
+  let j = 0;
+  while (i < n || j < m) {
+    if (i < n && j < m && a[i] === b[j]) {
+      if (current) out.push(current);
+      current = null;
+      i += 1;
+      j += 1;
+    } else if (j < m && (i >= n || table[i]![j + 1]! >= table[i + 1]![j]!)) {
+      current ??= { offset: start + i, end: start + i, text: "" };
+      current.text += b[j];
+      j += 1;
+    } else {
+      current ??= { offset: start + i, end: start + i, text: "" };
+      current.end = start + i + 1;
+      i += 1;
+    }
+  }
+  if (current) out.push(current);
+  return out.length && out.length <= 40 ? out : whole;
+}
+
 type SlotState = "bound" | "unbound" | "sample" | "cleared" | "statement" | "case";
 
 function stateOf(slot: Slot, binding: Binding | undefined): SlotState {
@@ -79,6 +126,8 @@ export function Mapper({
   onPlace,
   lockedReason,
   boxes,
+  editor,
+  stamp = "",
 }: {
   html: string;
   slots: Slot[];
@@ -94,6 +143,10 @@ export function Mapper({
   lockedReason?: string;
   /** Spacing of drawn checkboxes and their printed preview. */
   boxes?: BoxSpacingApi;
+  /** Word-like editing of the client's page (text, font size, pictures) and undo. */
+  editor?: PageEditorApi;
+  /** Changes whenever the version was saved. */
+  stamp?: string;
 }) {
   const paper = useRef<HTMLDivElement>(null);
   const stage = useRef<HTMLDivElement>(null);
@@ -101,7 +154,9 @@ export function Mapper({
   const [dragging, setDragging] = useState<string | null>(null);
   const [ghost, setGhost] = useState<{ x: number; y: number; label: string } | null>(null);
   const drag = useRef<{
-    kind: "new" | "move";
+    kind: "new" | "move" | "picture";
+    /** The picture being dragged to another spot (page editing). */
+    picture?: string;
     anchor?: string;
     newKind?: NewKind;
     startX: number;
@@ -122,6 +177,33 @@ export function Mapper({
   }, [hint]);
   const [placing, setPlacing] = useState(false);
   const [strip, setStrip] = useState<HTMLDivElement | null>(null);
+  const scroller = useRef<HTMLDivElement>(null);
+  // «ربط الحقول» binds places; «تحرير التصميم» edits the page itself, like Word.
+  const [mode, setMode] = useState<"map" | "edit">("map");
+  const editing = mode === "edit" && Boolean(editor) && !readOnly;
+  const [picture, setPicture] = useState<string | null>(null);
+  const [tool, setTool] = useState<{
+    sel: { part: string; paragraph: number; offset: number; end: number };
+    top: number;
+    left: number;
+    size: number;
+    bold: boolean;
+    italic: boolean;
+    underline: boolean;
+  } | null>(null);
+  const [line, setLine] = useState<{
+    part: string;
+    paragraph: number;
+    original: string;
+    text: string;
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+    fontSize: string;
+  } | null>(null);
+  const lineDone = useRef(false);
+  const [working, setWorking] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [filter, setFilter] = useState<SlotState | "all">("all");
   const byAnchor = useMemo(() => new Map(bindings.map((binding) => [binding.anchor, binding])), [bindings]);
@@ -159,6 +241,7 @@ export function Mapper({
       const movable = !readOnly && Boolean(onPlace) && slot !== undefined && MOVABLE.includes(slot.kind);
       element.classList.toggle("movable", movable);
     });
+    root.querySelectorAll<HTMLElement>("[data-img]").forEach((element) => element.classList.toggle("picked", editing && element.dataset.img === picture));
   });
 
   /** Where a drop lands: the paragraph and the character offset, read from the page. */
@@ -290,8 +373,16 @@ export function Mapper({
   const drop = async (x: number, y: number, current: NonNullable<typeof drag.current>) => {
     const target = dropTarget(x, y);
     endDrag();
-    if (!onPlace || !target?.ok) return;
+    if (!target?.ok || (current.kind !== "picture" && !onPlace)) return;
     const where = { part: target.part, paragraph: target.paragraph, offset: target.offset };
+    if (current.kind === "picture" && current.picture && editor) {
+      setPlacing(true);
+      const done = await editor.edit({ op: "picture.move", picture: current.picture, ...where });
+      setPlacing(false);
+      if (done) setPicture(null);
+      return;
+    }
+    if (!onPlace) return;
     setPlacing(true);
     const anchor =
       current.kind === "move" && current.anchor
@@ -350,6 +441,13 @@ export function Mapper({
 
   const startMove = (event: React.PointerEvent) => {
     if (event.button !== 0) return;
+    if (mode === "edit") {
+      const image = (event.target as HTMLElement).closest<HTMLElement>("[data-img]");
+      if (!image || !editing) return;
+      event.preventDefault();
+      drag.current = { kind: "picture", picture: image.dataset.img!, startX: event.clientX, startY: event.clientY, active: false, label: "صورة" };
+      return;
+    }
     const pressed = (event.target as HTMLElement).closest<HTMLElement>("[data-anchor]");
     if (!pressed) return;
     if (readOnly || !onPlace) {
@@ -394,8 +492,126 @@ export function Mapper({
 
   const onClick = (event: React.MouseEvent) => {
     if (justDragged.current) return;
+    if (mode === "edit") {
+      const image = (event.target as HTMLElement).closest<HTMLElement>("[data-img]");
+      setPicture(image ? image.dataset.img! : null);
+      return;
+    }
     const target = (event.target as HTMLElement).closest<HTMLElement>("[data-anchor]");
     if (target) setSelected(groupAnchor(target.dataset.anchor!));
+  };
+
+  // ───────────── page editing ─────────────
+
+  /** Where an element of the page sits inside the scrolling paper, for tools drawn over it. */
+  const within = (rect: DOMRect) => {
+    const box = scroller.current!.getBoundingClientRect();
+    return { top: rect.top - box.top + scroller.current!.scrollTop, left: rect.left - box.left + scroller.current!.scrollLeft };
+  };
+
+  // The formatting toolbar follows the selected words.
+  useEffect(() => {
+    if (!editing) {
+      setTool(null);
+      return;
+    }
+    const update = () => {
+      if (line) return;
+      const found = selectedText();
+      const selection = window.getSelection();
+      if (found === "none" || found === "split" || !selection?.rangeCount || !scroller.current) {
+        if (found === "split") setHint("حدّد كلمات داخل سطر واحد لتغيير حجمها أو حذفها.");
+        setTool(null);
+        return;
+      }
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      const start = range.startContainer instanceof Element ? range.startContainer : range.startContainer.parentElement;
+      const style = start ? window.getComputedStyle(start) : null;
+      const at = within(rect);
+      setTool({
+        sel: found,
+        top: Math.max(0, at.top - 46),
+        left: Math.max(0, at.left + rect.width / 2),
+        size: style ? Math.round(parseFloat(style.fontSize) / 1.25) : 11,
+        bold: style ? Number(style.fontWeight) >= 600 : false,
+        italic: style?.fontStyle === "italic",
+        underline: Boolean(style?.textDecorationLine.includes("underline")),
+      });
+    };
+    const handler = () => window.setTimeout(update, 0);
+    document.addEventListener("mouseup", handler);
+    document.addEventListener("keyup", handler);
+    return () => {
+      document.removeEventListener("mouseup", handler);
+      document.removeEventListener("keyup", handler);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing, line, html]);
+
+  const apply = async (change: { size?: number; bold?: boolean; italic?: boolean; underline?: boolean } | "delete") => {
+    if (!tool || !editor) return;
+    setWorking(true);
+    const done =
+      change === "delete"
+        ? await editor.edit({ op: "text", ...tool.sel, text: "" })
+        : await editor.edit({ op: "style", ...tool.sel, ...change });
+    setWorking(false);
+    if (done) {
+      window.getSelection()?.removeAllRanges();
+      setTool(null);
+    }
+  };
+
+  /** Double-click a line: its words open for typing, as in Word. */
+  const openLine = async (event: React.MouseEvent) => {
+    if (!editing || !editor) return;
+    const paragraph = (event.target as HTMLElement).closest<HTMLElement>("[data-p]");
+    if (!paragraph || !scroller.current) return;
+    const [part, index] = (paragraph.dataset.p ?? "").split("|");
+    try {
+      const text = await editor.paragraph(part!, Number(index));
+      const rect = paragraph.getBoundingClientRect();
+      const at = within(rect);
+      lineDone.current = false;
+      setTool(null);
+      window.getSelection()?.removeAllRanges();
+      setLine({
+        part: part!,
+        paragraph: Number(index),
+        original: text,
+        text,
+        top: at.top,
+        left: at.left,
+        width: Math.max(rect.width, 160),
+        height: Math.max(rect.height + 10, 34),
+        fontSize: window.getComputedStyle(paragraph).fontSize,
+      });
+    } catch {
+      setHint("تعذّر فتح هذا السطر للكتابة.");
+    }
+  };
+
+  /** Sends only what changed in the line: the words between the unchanged start and end. */
+  const closeLine = async (save: boolean) => {
+    if (!line || lineDone.current) return;
+    lineDone.current = true;
+    const { original, text } = line;
+    setLine(null);
+    if (!save || text === original || !editor) return;
+    const changes = changesBetween(original, text);
+    const first = changes[0]!;
+    setWorking(true);
+    await editor.edit({ op: "text", part: line.part, paragraph: line.paragraph, offset: first.offset, end: first.end, text: first.text, changes });
+    setWorking(false);
+  };
+
+  const onPageKey = (event: React.KeyboardEvent) => {
+    if (!editing || !tool || line) return;
+    if (event.key === "Delete" || event.key === "Backspace") {
+      event.preventDefault();
+      void apply("delete");
+    }
   };
   const onKey = (event: React.KeyboardEvent) => {
     if (event.key !== "Enter" && event.key !== " ") return;
@@ -507,7 +723,48 @@ export function Mapper({
             {hint}
           </p>
         )}
-        {!readOnly && onPlace && (
+        {!readOnly && editor && (
+          <div className="tpl-mode-bar">
+            <div className="segmented">
+              <button className={mode === "map" ? "active" : ""} onClick={() => setMode("map")}>
+                <Icon name="grid" size={14} />
+                ربط الحقول
+              </button>
+              <button
+                className={mode === "edit" ? "active" : ""}
+                onClick={() => {
+                  setMode("edit");
+                  setSelected(null);
+                }}
+              >
+                <Icon name="file" size={14} />
+                تحرير التصميم
+              </button>
+            </div>
+            <button
+              className="btn small ghost"
+              disabled={!editor.undoSteps || working}
+              title={editor.lastChange ? `تراجع عن: ${editor.lastChange}` : "لا يوجد ما يُتراجع عنه"}
+              onClick={async () => {
+                setWorking(true);
+                await editor.undo();
+                setWorking(false);
+                setPicture(null);
+              }}
+            >
+              <Icon name="refresh" size={14} />
+              تراجع {editor.undoSteps ? `(${number(editor.undoSteps)})` : ""}
+            </button>
+          </div>
+        )}
+        {editing && (
+          <div className="tpl-place-bar">
+            <small>
+              حدّد كلمات لتغيير حجمها أو جعلها عريضة أو حذفها (أو اضغط Delete). اضغط مرتين على أي سطر لتكتب فيه وتحذف كما في Word، ثم Enter للحفظ. اضغط صورة لتغيير حجمها، أو اسحبها إلى مكان آخر.
+            </small>
+          </div>
+        )}
+        {mode === "map" && !readOnly && onPlace && (
           <div className="tpl-place-bar">
             {NEW_POINTS.map((item) => (
               <span
@@ -535,14 +792,74 @@ export function Mapper({
             </button>
           ))}
         </div>
-        {selected && slotMap.get(selected)?.kind === "checkbox" && boxes && <div className="tpl-boxes-strip" ref={setStrip} />}
-        <div className="tpl-paper-scroll">
+        {((selected && slotMap.get(selected)?.kind === "checkbox" && boxes) || (editing && picture)) && (
+          <div className="tpl-boxes-strip" ref={setStrip} />
+        )}
+        <div className={`tpl-paper-scroll ${editing ? "is-editing" : ""}`} ref={scroller}>
+          {tool && !line && (
+            <div className="tpl-format-bar glass" style={{ top: tool.top, left: tool.left }} onMouseDown={(event) => event.preventDefault()}>
+              <select
+                aria-label="حجم الخط"
+                value={tool.size}
+                disabled={working}
+                onChange={(event) => void apply({ size: Number(event.target.value) })}
+              >
+                {[...new Set([8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 36, tool.size])].sort((a, b) => a - b).map((size) => (
+                  <option key={size} value={size}>
+                    {number(size)}
+                  </option>
+                ))}
+              </select>
+              <button disabled={working} title="تصغير الخط" onClick={() => void apply({ size: Math.max(4, tool.size - 1) })}>
+                A−
+              </button>
+              <button disabled={working} title="تكبير الخط" onClick={() => void apply({ size: Math.min(96, tool.size + 1) })}>
+                A+
+              </button>
+              <button disabled={working} className={tool.bold ? "on" : ""} title="عريض" onClick={() => void apply({ bold: !tool.bold })}>
+                <b>B</b>
+              </button>
+              <button disabled={working} className={tool.italic ? "on" : ""} title="مائل" onClick={() => void apply({ italic: !tool.italic })}>
+                <i>I</i>
+              </button>
+              <button disabled={working} className={tool.underline ? "on" : ""} title="تسطير" onClick={() => void apply({ underline: !tool.underline })}>
+                <u>U</u>
+              </button>
+              <button disabled={working} className="danger" title="حذف الكلمات المحددة" onClick={() => void apply("delete")}>
+                حذف
+              </button>
+            </div>
+          )}
+          {line && (
+            <textarea
+              className="tpl-line-editor"
+              dir="rtl"
+              autoFocus
+              value={line.text}
+              style={{ top: line.top, left: line.left, width: line.width, minHeight: line.height, fontSize: line.fontSize }}
+              onChange={(event) => setLine({ ...line, text: event.target.value })}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  void closeLine(true);
+                } else if (event.key === "Escape") {
+                  event.preventDefault();
+                  void closeLine(false);
+                }
+              }}
+              onBlur={() => void closeLine(true)}
+            />
+          )}
           <div
             className="tpl-paper"
             dir="rtl"
             ref={paper}
             onClick={onClick}
-            onKeyDown={onKey}
+            onDoubleClick={(event) => void openLine(event)}
+            onKeyDown={(event) => {
+              onKey(event);
+              onPageKey(event);
+            }}
             onPointerDown={startMove}
             // Server-rendered from the stored template: text is escaped, pictures are inline data.
             dangerouslySetInnerHTML={{ __html: html }}
@@ -559,8 +876,25 @@ export function Mapper({
           )}
       </div>
 
-      <aside className={`tpl-inspector glass ${slot ? "has-slot" : ""}`}>
-        {!slot && (
+      <aside className={`tpl-inspector glass ${slot || (editing && picture) ? "has-slot" : ""}`}>
+        {editing && picture && editor && (
+          <PicturePanel key={picture} id={picture} api={editor} readOnly={readOnly} previewHost={strip} stamp={stamp} onClose={() => setPicture(null)} />
+        )}
+        {editing && !picture && (
+          <div className="tpl-inspector-empty">
+            <Icon name="file" size={26} />
+            <strong>تحرير تصميم العميل</strong>
+            <p>
+              التعديلات تُحفظ في ملف Word نفسه وتظهر في كل تقرير بهذا الإصدار. أماكن الحقول لا تتأثر، ويمكنك التراجع عن أي تعديل بزر «تراجع».
+            </p>
+            <ul className="tpl-edit-help">
+              <li>حدّد كلمات ← غيّر الحجم أو اجعلها عريضة أو مائلة أو احذفها.</li>
+              <li>اضغط مرتين على سطر ← اكتب واحذف فيه، ثم Enter للحفظ أو Esc للإلغاء. Shift+Enter لسطر جديد.</li>
+              <li>اضغط صورة ← كبّرها أو صغّرها أو احذفها. اسحبها لنقلها إلى سطر أو خانة أخرى.</li>
+            </ul>
+          </div>
+        )}
+        {!editing && !slot && (
           <div className="tpl-inspector-empty">
             <Icon name="grid" size={26} />
             <strong>اختر مكانًا في الصفحة</strong>
@@ -583,7 +917,7 @@ export function Mapper({
             )}
           </div>
         )}
-        {slot && (
+        {!editing && slot && (
           <div className="tpl-inspector-body">
             <div className="tpl-inspector-head">
               <span className="tpl-kind">{SLOT_KINDS[slot.kind]}</span>

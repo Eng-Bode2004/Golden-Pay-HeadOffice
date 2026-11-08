@@ -6,6 +6,7 @@ import { date, ErrorMessage, Icon, number } from "../../components/ui";
 import { FieldsEditor, type Block } from "./FieldsEditor";
 import type { BoxInfo, BoxSpacingApi } from "./BoxSpacing";
 import { Mapper, type PlaceOp } from "./Mapper";
+import type { PageEditorApi, PictureInfo } from "./PicturePanel";
 import { allFields, type Binding, type Check, type Definition, type Inventory, SEVERITY, STATUS, type Version, warningId } from "./model";
 import { EventList, type TemplateEvent } from "./TemplateDetail";
 
@@ -374,6 +375,51 @@ export function VersionWorkspacePage() {
     },
     preview: (anchor, signal) => apiBlob(`/forms/admin/versions/${versionId}/boxes/preview?anchor=${encodeURIComponent(anchor)}`, signal),
   };
+  /** Saves pending field edits first, so a page edit never loses them. */
+  const saveFirst = async () => {
+    if (dirty) {
+      await api(`/forms/admin/versions/${versionId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ definition, bindings, acknowledged }),
+      });
+    }
+  };
+  /** Word-like editing of the client's page, and undo. */
+  const editor: PageEditorApi = {
+    edit: async (op) => {
+      setError("");
+      setNotice("");
+      try {
+        await saveFirst();
+        await api(`/forms/admin/versions/${versionId}/edits`, { method: "POST", body: JSON.stringify(op) });
+        await load();
+        return true;
+      } catch (err) {
+        setError(err instanceof ApiRequestError ? err.message : "تعذّر تعديل التصميم.");
+        return false;
+      }
+    },
+    undo: async () => {
+      setError("");
+      setNotice("");
+      try {
+        await saveFirst();
+        const result = await api<{ undone: string | null }>(`/forms/admin/versions/${versionId}/undo`, { method: "POST", body: "{}" });
+        await load();
+        setNotice(result.undone ? `تم التراجع عن: ${result.undone}` : "تم التراجع.");
+        return true;
+      } catch (err) {
+        setError(err instanceof ApiRequestError ? err.message : "تعذّر التراجع.");
+        return false;
+      }
+    },
+    paragraph: async (part, index) =>
+      (await api<{ text: string }>(`/forms/admin/versions/${versionId}/paragraph?part=${encodeURIComponent(part)}&paragraph=${index}`)).text,
+    picture: async (id) => (await api<{ picture: PictureInfo }>(`/forms/admin/versions/${versionId}/picture?id=${encodeURIComponent(id)}`)).picture,
+    picturePreview: (id, signal) => apiBlob(`/forms/admin/versions/${versionId}/picture/preview?id=${encodeURIComponent(id)}`, signal),
+    undoSteps: version?.undo_steps ?? 0,
+    lastChange: version?.last_change ?? null,
+  };
   const post = (path: string, body: object = {}, success?: string) =>
     perform(() => api(`/forms/admin/versions/${versionId}/${path}`, { method: "POST", body: JSON.stringify(body) }), success);
 
@@ -559,6 +605,8 @@ export function VersionWorkspacePage() {
             }}
             onPlace={readOnly ? undefined : place}
             boxes={boxes}
+            editor={editor}
+            stamp={String(version.updated_at)}
             lockedReason={
               version.status === "in_review"
                 ? "هذا الإصدار مُرسل للمراجعة ومقفل، فلا تتحرك نقاطه. لتعديله: اضغط «إعادة للتعديل» فيعود مسودة، ثم حرّك النقاط وأعد إرساله، ثم اعتمده."
