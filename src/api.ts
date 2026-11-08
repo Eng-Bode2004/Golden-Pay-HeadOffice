@@ -47,16 +47,38 @@ async function parse(response: Response): Promise<unknown> {
   }
 }
 
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Reads (GET) ride out a short outage, such as the backend restarting: no answer, or
+ * 502/503/504 from the host, is tried again a few times. Changes are never re-sent, so an
+ * edit cannot be applied twice.
+ */
+async function fetchWithRetry(url: string, init: RequestInit): Promise<Response> {
+  const reading = !init.method || init.method.toUpperCase() === "GET";
+  const delays = reading ? [1000, 2500, 5000] : [];
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      const response = await fetch(url, init);
+      if (!reading || ![502, 503, 504].includes(response.status) || attempt >= delays.length) return response;
+    } catch (error) {
+      if (init.signal?.aborted || attempt >= delays.length) throw error;
+    }
+    await wait(delays[attempt]!);
+    if (init.signal?.aborted) throw new DOMException("Aborted", "AbortError");
+  }
+}
+
 async function send(
   path: string,
   init: RequestInit & { auth?: boolean },
   headers: Headers,
 ): Promise<Response> {
-  const response = await fetch(`${API}${path}`, { ...init, headers });
+  const response = await fetchWithRetry(`${API}${path}`, { ...init, headers });
   if (response.status !== 401 || init.auth === false) return response;
   if (!(await tryRefresh())) return response;
   headers.set("Authorization", `Bearer ${getAccessToken()}`);
-  return fetch(`${API}${path}`, { ...init, headers });
+  return fetchWithRetry(`${API}${path}`, { ...init, headers });
 }
 
 /** Authenticated image download; document images are never public URLs. */
@@ -136,7 +158,9 @@ async function performRefresh(): Promise<boolean> {
       data?: { access_token?: string; refresh_token?: string };
     } | null;
     if (!response.ok || !body?.data?.access_token) {
-      clearSession();
+      // Only a refusal ends the session. A server that is restarting (5xx) keeps it, so a
+      // short outage never signs anyone out.
+      if ([400, 401, 403].includes(response.status)) clearSession();
       return false;
     }
     setSession(body.data.access_token, body.data.refresh_token ?? refresh);

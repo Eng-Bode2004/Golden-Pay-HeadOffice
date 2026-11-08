@@ -150,6 +150,8 @@ const english: Record<string, string> = {
   "صورة": "Picture",
   "صفوف متكررة": "Repeating rows",
   "عبارة إقرار": "Statement",
+  "اضغط «عرض» لرؤية الصفوف التي فيها الصورة كما ستُطبع.": "Press «Show» to see the rows with the picture as they will print.",
+  "تعذّر تجهيز المعاينة. اضغط «تحديث» أو راجعها من «معاينة PDF».": "Could not prepare the preview. Press «Refresh» or check it in «PDF preview».",
   "حدّد كلمات داخل سطر واحد لتغيير حجمها أو حذفها.": "Select words within one line to resize or delete them.",
   "تعذّر فتح هذا السطر للكتابة.": "Could not open this line for typing.",
   "ربط الحقول": "Link fields",

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon, number } from "../../components/ui";
+import { usePdfPreview } from "./usePdfPreview";
 
 export interface BoxInfo {
   anchor: string;
@@ -44,7 +45,6 @@ export function BoxSpacing({
   const [step, setStep] = useState(1);
   const [pending, setPending] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
-  const [preview, setPreview] = useState<{ url: string | null; loading: boolean; error: string }>({ url: null, loading: false, error: "" });
   const [stamp, setStamp] = useState(0);
   const timer = useRef<number | undefined>(undefined);
   const waiting = useRef<Record<string, number>>({});
@@ -66,24 +66,7 @@ export function BoxSpacing({
   }, [anchor]);
 
   // The printed rows: converted on the server exactly as reports are, every box ticked.
-  useEffect(() => {
-    if (!boxes?.some((box) => box.floating)) return;
-    const controller = new AbortController();
-    let url: string | null = null;
-    setPreview((current) => ({ ...current, loading: true, error: "" }));
-    api
-      .preview(anchor, controller.signal)
-      .then((blob) => {
-        url = URL.createObjectURL(blob);
-        setPreview({ url, loading: false, error: "" });
-      })
-      .catch(() => !controller.signal.aborted && setPreview({ url: null, loading: false, error: "تعذّر تجهيز المعاينة. حاول مرة أخرى." }));
-    return () => {
-      controller.abort();
-      if (url) URL.revokeObjectURL(url);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [anchor, stamp, Boolean(boxes?.some((box) => box.floating))]);
+  const preview = usePdfPreview(boxes?.some((box) => box.floating) ? (signal) => api.preview(anchor, signal) : null, `${anchor}:${stamp}`);
 
   // Right to left: the first option is the rightmost box.
   const ordered = useMemo(

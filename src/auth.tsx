@@ -85,12 +85,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
-    refreshMe()
-      .catch(() => {
-        clearSession();
+    // A backend that is restarting does not sign anyone out: keep trying for about a minute,
+    // and end the session only when the server says it is no longer valid.
+    let cancelled = false;
+    const attempt = async (tries: number): Promise<void> => {
+      try {
+        await refreshMe();
+      } catch (error) {
+        const status = error instanceof ApiRequestError ? error.error.status : 0;
+        if ([400, 401, 403].includes(status)) {
+          clearSession();
+          setUser(null);
+          return;
+        }
+        if (tries < 12 && !cancelled) {
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+          if (!cancelled) return attempt(tries + 1);
+        }
         setUser(null);
-      })
-      .finally(() => setLoading(false));
+      }
+    };
+    void attempt(0).finally(() => !cancelled && setLoading(false));
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const value = useMemo<AuthState>(

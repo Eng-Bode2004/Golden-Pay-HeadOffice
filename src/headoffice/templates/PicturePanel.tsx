@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon, number } from "../../components/ui";
+import { usePdfPreview } from "./usePdfPreview";
 
 export interface PictureInfo {
   id: string;
@@ -65,7 +66,10 @@ export function PicturePanel({
   const waiting = useRef({ dx: 0, dy: 0, factor: 1 });
   const timer = useRef<number | undefined>(undefined);
   const [saving, setSaving] = useState(false);
-  const [preview, setPreview] = useState<{ url: string | null; loading: boolean; error: string }>({ url: null, loading: false, error: "" });
+  // The printed preview is built on request (each one is a full conversion on the server).
+  const [wanted, setWanted] = useState(false);
+  const [round, setRound] = useState(0);
+  const preview = usePdfPreview(wanted ? (signal) => api.picturePreview(id, signal) : null, `${id}:${stamp}:${round}`);
 
   useEffect(() => {
     let live = true;
@@ -80,23 +84,6 @@ export function PicturePanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, stamp]);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    let url: string | null = null;
-    setPreview((current) => ({ ...current, loading: true, error: "" }));
-    api
-      .picturePreview(id, controller.signal)
-      .then((blob) => {
-        url = URL.createObjectURL(blob);
-        setPreview({ url, loading: false, error: "" });
-      })
-      .catch(() => !controller.signal.aborted && setPreview({ url: null, loading: false, error: "تعذّر تجهيز المعاينة. راجعها من «معاينة PDF»." }));
-    return () => {
-      controller.abort();
-      if (url) URL.revokeObjectURL(url);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, stamp]);
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
   /** Adds up quick clicks and saves them together once they pause. */
@@ -124,7 +111,13 @@ export function PicturePanel({
     <div className="tpl-boxes-preview">
       <div className="tpl-boxes-preview-head">
         <strong>كما ستُطبع</strong>
-        <span className="tpl-muted">{saving ? "جارٍ الحفظ…" : preview.loading ? "جارٍ تجهيز المعاينة… (بضع ثوانٍ)" : "الصفوف التي فيها الصورة فقط"}</span>
+        <span className="tpl-muted">
+          {!wanted ? "اضغط «عرض» لرؤية الصفوف التي فيها الصورة كما ستُطبع." : saving ? "جارٍ الحفظ…" : preview.loading ? "جارٍ تجهيز المعاينة… (بضع ثوانٍ)" : "الصفوف التي فيها الصورة فقط"}
+        </span>
+        <button className="btn small ghost" onClick={() => (wanted ? setRound((value) => value + 1) : setWanted(true))}>
+          <Icon name="refresh" size={14} />
+          {wanted ? "تحديث" : "عرض"}
+        </button>
       </div>
       {preview.error && <p className="tpl-muted">{preview.error}</p>}
       {preview.url && <iframe className={preview.loading || saving ? "loading" : ""} title="معاينة الصورة" src={`${preview.url}#toolbar=0&navpanes=0&view=FitH`} />}
