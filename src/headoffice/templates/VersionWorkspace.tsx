@@ -4,6 +4,7 @@ import { api, apiBlob, ApiRequestError } from "../../api";
 import { useAuth } from "../../auth";
 import { date, ErrorMessage, Icon, number } from "../../components/ui";
 import { FieldsEditor, type Block } from "./FieldsEditor";
+import type { BoxInfo, BoxSpacingApi } from "./BoxSpacing";
 import { Mapper, type PlaceOp } from "./Mapper";
 import { allFields, type Binding, type Check, type Definition, type Inventory, SEVERITY, STATUS, type Version, warningId } from "./model";
 import { EventList, type TemplateEvent } from "./TemplateDetail";
@@ -349,6 +350,30 @@ export function VersionWorkspacePage() {
       return null;
     }
   };
+  /** Spacing of drawn checkboxes: read, move (saving pending edits first) and preview. */
+  const boxes: BoxSpacingApi = {
+    list: async (anchor) =>
+      (await api<{ boxes: BoxInfo[] }>(`/forms/admin/versions/${versionId}/boxes?anchor=${encodeURIComponent(anchor)}`)).boxes,
+    move: async (moves) => {
+      setError("");
+      setNotice("");
+      try {
+        if (dirty) {
+          await api(`/forms/admin/versions/${versionId}`, {
+            method: "PATCH",
+            body: JSON.stringify({ definition, bindings, acknowledged }),
+          });
+        }
+        await api(`/forms/admin/versions/${versionId}/boxes`, { method: "POST", body: JSON.stringify({ moves }) });
+        await load();
+        return true;
+      } catch (err) {
+        setError(err instanceof ApiRequestError ? err.message : "تعذّر تحريك المربعات.");
+        return false;
+      }
+    },
+    preview: (anchor, signal) => apiBlob(`/forms/admin/versions/${versionId}/boxes/preview?anchor=${encodeURIComponent(anchor)}`, signal),
+  };
   const post = (path: string, body: object = {}, success?: string) =>
     perform(() => api(`/forms/admin/versions/${versionId}/${path}`, { method: "POST", body: JSON.stringify(body) }), success);
 
@@ -533,6 +558,7 @@ export function VersionWorkspacePage() {
               setDirty(true);
             }}
             onPlace={readOnly ? undefined : place}
+            boxes={boxes}
             lockedReason={
               version.status === "in_review"
                 ? "هذا الإصدار مُرسل للمراجعة ومقفل، فلا تتحرك نقاطه. لتعديله: اضغط «إعادة للتعديل» فيعود مسودة، ثم حرّك النقاط وأعد إرساله. ويعتمده بعد ذلك عضو آخر في الإدارة العليا."

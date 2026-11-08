@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon, type IconName, number } from "../../components/ui";
+import { BoxSpacing, type BoxSpacingApi } from "./BoxSpacing";
 import {
   ACTIONS,
   ACTIONS_FOR_SLOT,
@@ -77,6 +78,7 @@ export function Mapper({
   onDefinition,
   onPlace,
   lockedReason,
+  boxes,
 }: {
   html: string;
   slots: Slot[];
@@ -90,6 +92,8 @@ export function Mapper({
   onPlace?: (place: PlaceOp) => Promise<string | null>;
   /** Why points cannot move in this version (it is under review or approved). */
   lockedReason?: string;
+  /** Spacing of drawn checkboxes and their printed preview. */
+  boxes?: BoxSpacingApi;
 }) {
   const paper = useRef<HTMLDivElement>(null);
   const stage = useRef<HTMLDivElement>(null);
@@ -117,6 +121,7 @@ export function Mapper({
     return () => window.clearTimeout(timer);
   }, [hint]);
   const [placing, setPlacing] = useState(false);
+  const [strip, setStrip] = useState<HTMLDivElement | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [filter, setFilter] = useState<SlotState | "all">("all");
   const byAnchor = useMemo(() => new Map(bindings.map((binding) => [binding.anchor, binding])), [bindings]);
@@ -530,6 +535,7 @@ export function Mapper({
             </button>
           ))}
         </div>
+        {selected && slotMap.get(selected)?.kind === "checkbox" && boxes && <div className="tpl-boxes-strip" ref={setStrip} />}
         <div className="tpl-paper-scroll">
           <div
             className="tpl-paper"
@@ -683,6 +689,8 @@ export function Mapper({
                 </select>
               </label>
             )}
+
+            {slot.kind === "checkbox" && boxes && <BoxSpacing key={slot.anchor} anchor={slot.anchor} readOnly={readOnly} api={boxes} previewHost={strip} />}
 
             {binding?.action === "rows" && field && (
               <div className="field">

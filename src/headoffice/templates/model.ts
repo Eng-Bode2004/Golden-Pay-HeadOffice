@@ -79,6 +79,8 @@ export interface Slot {
   image?: { md5: string; role: string; cx: number; cy: number };
   rows?: { anchors: string[]; columns: string[] };
   sample?: boolean;
+  /** A drawn box floating at a fixed spot: how far Head Office moved it sideways, in mm. */
+  nudge?: number;
 }
 
 export type BindingAction = "text" | "check" | "choose" | "image" | "rows" | "statement" | "clear";
