@@ -27,6 +27,8 @@ export interface PlaceOp {
   part: string;
   paragraph: number;
   offset: number;
+  /** A statement made from selected text: where the selection ends in the same paragraph. */
+  end?: number;
 }
 interface DropTarget {
   part: string;
@@ -94,7 +96,17 @@ export function Mapper({
   const [caret, setCaret] = useState<{ top: number; left: number; height: number; ok: boolean } | null>(null);
   const [dragging, setDragging] = useState<string | null>(null);
   const [ghost, setGhost] = useState<{ x: number; y: number; label: string } | null>(null);
-  const drag = useRef<{ kind: "new" | "move"; anchor?: string; newKind?: NewKind; startX: number; startY: number; active: boolean; label: string } | null>(null);
+  const drag = useRef<{
+    kind: "new" | "move";
+    anchor?: string;
+    newKind?: NewKind;
+    startX: number;
+    startY: number;
+    active: boolean;
+    label: string;
+    /** Text selected on the page when «عبارة إقرار» was pressed. */
+    selection?: { part: string; paragraph: number; offset: number; end: number } | null;
+  } | null>(null);
   const justDragged = useRef(false);
   // A press on a point that cannot move: explain why as soon as the user tries to drag it.
   const blocked = useRef<{ x: number; y: number; reason: string } | null>(null);
@@ -191,6 +203,64 @@ export function Mapper({
     return { part: part!, paragraph: Number(index), offset: Math.max(0, at), rect, ok: !inside };
   };
 
+  /** A spot in the page's text as the paragraph and the character offset the server uses. */
+  const pointOf = (node: Node, offset: number): { paragraph: HTMLElement; at: number } | null => {
+    // A selection edge on an element: move it to the nearest text.
+    if (!(node instanceof Text)) {
+      const element = node as Element;
+      const after = element.childNodes[offset];
+      if (after) {
+        const walker = document.createTreeWalker(after, NodeFilter.SHOW_TEXT);
+        const first = after instanceof Text ? after : (walker.nextNode() as Text | null);
+        if (first) return pointOf(first, 0);
+      }
+      const before = element.childNodes[offset - 1];
+      if (before) {
+        const walker = document.createTreeWalker(before, NodeFilter.SHOW_TEXT);
+        let last: Text | null = before instanceof Text ? before : null;
+        for (let current = walker.nextNode(); current; current = walker.nextNode()) last = current as Text;
+        if (last) return pointOf(last, last.length);
+      }
+      const paragraph = element.closest<HTMLElement>("[data-p]");
+      return paragraph ? { paragraph, at: offset === 0 ? 0 : Number(paragraph.dataset.len ?? 0) } : null;
+    }
+    const paragraph = node.parentElement?.closest<HTMLElement>("[data-p]");
+    const span = node.parentElement?.closest<HTMLElement>("[data-o]");
+    if (!paragraph || !span || !paragraph.contains(span)) return null;
+    let before = 0;
+    const walker = document.createTreeWalker(span, NodeFilter.SHOW_TEXT);
+    for (let current = walker.nextNode(); current && current !== node; current = walker.nextNode()) before += current.textContent?.length ?? 0;
+    return { paragraph, at: Number(span.dataset.o) + before + offset };
+  };
+
+  /** The text selected on the page, when it lies inside one paragraph. */
+  const selectedText = (): { part: string; paragraph: number; offset: number; end: number } | "none" | "split" => {
+    const selection = window.getSelection();
+    const root = paper.current;
+    if (!selection || selection.isCollapsed || !selection.rangeCount || !root) return "none";
+    const range = selection.getRangeAt(0);
+    if (!root.contains(range.commonAncestorContainer)) return "none";
+    if (!range.toString().trim()) return "none";
+    const start = pointOf(range.startContainer, range.startOffset);
+    let end = pointOf(range.endContainer, range.endOffset);
+    // A triple-click ends the selection at the start of the next paragraph.
+    if (start && end && end.paragraph !== start.paragraph && end.at === 0 && range.endContainer !== start.paragraph) {
+      end = { paragraph: start.paragraph, at: Number(start.paragraph.dataset.len ?? 0) };
+    }
+    if (!start || !end || start.paragraph !== end.paragraph || end.at <= start.at) return "split";
+    const [part, index] = (start.paragraph.dataset.p ?? "").split("|");
+    return { part: part!, paragraph: Number(index), offset: start.at, end: end.at };
+  };
+
+  const fromSelection = async (selection: { part: string; paragraph: number; offset: number; end: number }) => {
+    if (!onPlace) return;
+    setPlacing(true);
+    const anchor = await onPlace({ op: "create", kind: "statement", ...selection });
+    setPlacing(false);
+    window.getSelection()?.removeAllRanges();
+    if (anchor) setSelected(anchor);
+  };
+
   const showCaret = (target: DropTarget | null) => {
     const box = stage.current?.getBoundingClientRect();
     if (!target || !box) {
@@ -253,7 +323,14 @@ export function Mapper({
         justDragged.current = true;
         window.setTimeout(() => (justDragged.current = false), 0);
         void drop(event.clientX, event.clientY, current);
-      } else endDrag();
+      } else {
+        endDrag();
+        // A press on «عبارة إقرار» without dragging: the selected sentence becomes the statement.
+        if (current.newKind === "statement") {
+          if (current.selection) void fromSelection(current.selection);
+          else setHint("حدّد الجملة في الصفحة بالفأرة ثم اضغط «عبارة إقرار» لتصبح عبارة إقرار، أو اسحب «عبارة إقرار» إلى مكان فارغ لإضافة عبارة جديدة.");
+        }
+      }
     };
     const cancel = () => endDrag();
     window.addEventListener("pointermove", move, { passive: false });
@@ -297,7 +374,17 @@ export function Mapper({
   const startNew = (newKind: NewKind, label: string) => (event: React.PointerEvent) => {
     if (event.button !== 0) return;
     event.preventDefault();
-    drag.current = { kind: "new", newKind, startX: event.clientX, startY: event.clientY, active: false, label };
+    // Read the selection now, before the press can clear it.
+    let selection: { part: string; paragraph: number; offset: number; end: number } | null = null;
+    if (newKind === "statement") {
+      const found = selectedText();
+      if (found === "split") {
+        setHint("حدّد جملة داخل فقرة واحدة فقط، ثم اضغط «عبارة إقرار».");
+        return;
+      }
+      if (found !== "none") selection = found;
+    }
+    drag.current = { kind: "new", newKind, startX: event.clientX, startY: event.clientY, active: false, label, selection };
   };
 
   const onClick = (event: React.MouseEvent) => {
@@ -430,7 +517,9 @@ export function Mapper({
                 {item.label}
               </span>
             ))}
-            <small>اسحب نقطة إلى مكانها في الصفحة ثم اربطها بحقل. ويمكنك سحب أي نقطة نص أو عبارة إقرار أو مربع اختيار لتغيير مكانها.</small>
+            <small>
+              اسحب نقطة إلى مكانها في الصفحة ثم اربطها بحقل. لتحويل جملة من نموذج العميل إلى عبارة إقرار: حدّدها بالفأرة ثم اضغط «عبارة إقرار». ويمكنك سحب أي نقطة نص أو عبارة إقرار أو مربع اختيار لتغيير مكانها.
+            </small>
           </div>
         )}
         <div className="tpl-legend">

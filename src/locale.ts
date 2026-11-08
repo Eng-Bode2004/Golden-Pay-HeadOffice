@@ -2,7 +2,10 @@ import { initAppearance } from "./themes";
 
 const english: Record<string, string> = {
   // Head Office templates and versioned client forms
-  "اسحب نقطة إلى مكانها في الصفحة ثم اربطها بحقل. ويمكنك سحب أي نقطة نص أو عبارة إقرار أو مربع اختيار لتغيير مكانها.": "Drag a point onto the page, then link it to a field. You can also drag any text, statement or checkbox point to move it.",
+  "اسحب نقطة إلى مكانها في الصفحة ثم اربطها بحقل. لتحويل جملة من نموذج العميل إلى عبارة إقرار: حدّدها بالفأرة ثم اضغط «عبارة إقرار». ويمكنك سحب أي نقطة نص أو عبارة إقرار أو مربع اختيار لتغيير مكانها.": "Drag a point onto the page, then link it to a field. To turn a sentence of the client's form into a statement, select it with the mouse, then press «Statement». You can also drag any text, statement or checkbox point to move it.",
+  "حدّد الجملة في الصفحة بالفأرة ثم اضغط «عبارة إقرار» لتصبح عبارة إقرار، أو اسحب «عبارة إقرار» إلى مكان فارغ لإضافة عبارة جديدة.": "Select the sentence on the page with the mouse, then press «Statement» to turn it into a statement, or drag «Statement» to an empty spot to add a new one.",
+  "حدّد جملة داخل فقرة واحدة فقط، ثم اضغط «عبارة إقرار».": "Select a sentence within a single paragraph, then press «Statement».",
+  "أصبحت الجملة المحددة عبارة إقرار، ولها حقل إقرار جديد في «نقاط مضافة يدويًا». تُطبع كما هي فقط إذا أكدها المستعلم مع الدليل المطلوب؛ راجع الدليل من اللوحة الجانبية.": "The selected sentence is now a statement, with a new statement field under «Points added by hand». It prints as written only when the investigator confirms it with the required evidence; check the evidence in the side panel.",
   "اسحب العبارة لتغيير مكانها. تُخفى العبارة الأصلية من مكانها، وتُطبع في المكان الجديد فقط إذا أكدها المستعلم وتوفر دليلها.": "Drag the statement to move it. The original sentence is hidden, and it prints at the new spot only if the investigator confirms it and its evidence is present.",
   "اسحب المربع لتغيير مكانه. يُخفى المربع الأصلي، ويُرسم مربع جديد في المكان الجديد ويُعلَّم حسب الإجابة.": "Drag the box to move it. The original box is hidden; a new box is drawn at the new spot and ticked from the answer.",
   "أُضيفت عبارة الإقرار. اربطها بحقل إقرار من اللوحة الجانبية، أو أنشئ حقلًا جديدًا لها.": "Statement added. Link it to a statement field in the side panel, or create a new one.",
