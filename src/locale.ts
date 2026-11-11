@@ -150,6 +150,8 @@ const english: Record<string, string> = {
   "صورة": "Picture",
   "صفوف متكررة": "Repeating rows",
   "عبارة إقرار": "Statement",
+  "اسم الإصدار (اختياري)": "Version name (optional)",
+  "كود الإصدار يُقرأ من ملف APK نفسه، فلا داعي لكتابته. ارفع دائمًا ملفًا أحدث من build-apk.sh.": "The version code is read from the APK file itself, so there is no need to type it. Always upload a newer file from build-apk.sh.",
   "مربع نص": "Text box",
   "مربع نص عائم": "Floating text box",
   "مربع نص داخل السطر": "Text box in the line",

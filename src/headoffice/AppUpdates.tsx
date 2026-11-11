@@ -24,7 +24,7 @@ function versionFromName(name: string): { name: string; code: string } | null {
 }
 
 /** Uploads with progress; fetch cannot report upload progress. */
-function upload(form: FormData, onProgress: (share: number) => void): Promise<void> {
+function upload(form: FormData, onProgress: (share: number) => void): Promise<{ version_code: number; version_name: string } | null> {
   return new Promise((resolve, reject) => {
     const request = new XMLHttpRequest();
     request.open("POST", `${API}/headoffice/app-releases`);
@@ -32,13 +32,16 @@ function upload(form: FormData, onProgress: (share: number) => void): Promise<vo
     if (token) request.setRequestHeader("Authorization", `Bearer ${token}`);
     request.upload.onprogress = (event) => event.lengthComputable && onProgress(event.loaded / event.total);
     request.onload = () => {
-      let body: { error?: { code?: string; message?: string; details?: Record<string, unknown> } } = {};
+      let body: {
+        data?: { version_code: number; version_name: string };
+        error?: { code?: string; message?: string; details?: Record<string, unknown> };
+      } = {};
       try {
         body = JSON.parse(request.responseText);
       } catch {
         /* not JSON */
       }
-      if (request.status >= 200 && request.status < 300) resolve();
+      if (request.status >= 200 && request.status < 300) resolve(body.data ?? null);
       else
         reject(
           new ApiRequestError({
@@ -57,7 +60,7 @@ function upload(form: FormData, onProgress: (share: number) => void): Promise<vo
 export function AppUpdatesPage() {
   const [releases, setReleases] = useState<Release[]>([]);
   const [file, setFile] = useState<File | null>(null);
-  const [draft, setDraft] = useState({ version_name: "", version_code: "", notes: "", mandatory: false });
+  const [draft, setDraft] = useState({ version_name: "", notes: "", mandatory: false });
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -74,7 +77,7 @@ export function AppUpdatesPage() {
     setFile(picked);
     setError("");
     const guess = picked ? versionFromName(picked.name) : null;
-    if (guess) setDraft((current) => ({ ...current, version_name: guess.name, version_code: guess.code }));
+    if (guess) setDraft((current) => ({ ...current, version_name: guess.name }));
   };
 
   const publish = async (event: React.FormEvent) => {
@@ -85,15 +88,16 @@ export function AppUpdatesPage() {
     const form = new FormData();
     form.set("apk", file);
     form.set("version_name", draft.version_name.trim());
-    form.set("version_code", draft.version_code.trim());
     form.set("notes", draft.notes);
     form.set("mandatory", String(draft.mandatory));
     setProgress(0);
     try {
-      await upload(form, setProgress);
-      setNotice(`نُشر الإصدار ${draft.version_name}. سيظهر التحديث للمستعلمين عند فتح التطبيق.`);
+      const published = await upload(form, setProgress);
+      setNotice(
+        `نُشر الإصدار ${published?.version_name ?? draft.version_name} (كود ${published?.version_code ?? "—"} من داخل الملف). سيظهر التحديث للمستعلمين عند فتح التطبيق أو عند «التحقق من وجود تحديثات».`,
+      );
       setFile(null);
-      setDraft({ version_name: "", version_code: "", notes: "", mandatory: false });
+      setDraft({ version_name: "", notes: "", mandatory: false });
       if (input.current) input.current.value = "";
       load();
     } catch (err) {
@@ -147,23 +151,11 @@ export function AppUpdatesPage() {
               <strong>{file ? file.name : "اختر ملف APK"}</strong>
               <small>{file ? megabytes(file.size) : "من مجلد releases بعد تشغيل build-apk.sh"}</small>
             </label>
-            <div className="form-row">
-              <label className="field">
-                <span>رقم الإصدار</span>
-                <input required dir="ltr" placeholder="1.2.0" value={draft.version_name} onChange={(event) => setDraft({ ...draft, version_name: event.target.value })} />
-              </label>
-              <label className="field">
-                <span>كود الإصدار (يجب أن يزيد عن السابق)</span>
-                <input
-                  required
-                  dir="ltr"
-                  inputMode="numeric"
-                  placeholder={latest ? String(latest.version_code + 1) : "1"}
-                  value={draft.version_code}
-                  onChange={(event) => setDraft({ ...draft, version_code: event.target.value.replace(/\D/g, "") })}
-                />
-              </label>
-            </div>
+            <label className="field">
+              <span>اسم الإصدار (اختياري)</span>
+              <input dir="ltr" placeholder="1.2.0" value={draft.version_name} onChange={(event) => setDraft({ ...draft, version_name: event.target.value })} />
+              <small className="field-hint">كود الإصدار يُقرأ من ملف APK نفسه، فلا داعي لكتابته. ارفع دائمًا ملفًا أحدث من build-apk.sh.</small>
+            </label>
             <label className="field">
               <span>ما الجديد؟ (يظهر للمستعلم)</span>
               <textarea rows={4} placeholder="مثال: كتابة الفراغات داخل عبارات الإقرار، والدخول بحساب Google." value={draft.notes} onChange={(event) => setDraft({ ...draft, notes: event.target.value })} />
@@ -178,7 +170,7 @@ export function AppUpdatesPage() {
                 <span>{number(Math.round(progress * 100))}٪</span>
               </div>
             )}
-            <button className="btn btn-primary" disabled={!file || progress !== null || !draft.version_name || !draft.version_code}>
+            <button className="btn btn-primary" disabled={!file || progress !== null}>
               <Icon name="refresh" size={16} />
               نشر التحديث
             </button>
