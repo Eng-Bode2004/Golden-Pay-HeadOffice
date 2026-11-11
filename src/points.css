@@ -192,3 +192,19 @@ a.office-tile:hover { transform: translateY(-3px); }
 [dir="ltr"] .notification-anchor .notification-popover.notify-center { right: 0; left: auto; }
 [dir="rtl"] .notify-center::before { inset-inline-end: auto; left: 15px; right: auto; }
 [dir="ltr"] .notify-center::before { inset-inline-end: auto; right: 15px; left: auto; }
+
+/* App updates */
+.apk-drop { position: relative; display: grid; justify-items: center; gap: 6px; padding: 26px 16px; border-radius: 18px; border: 1.5px dashed var(--line-strong); background: rgba(var(--tint-rgb), 0.04); cursor: pointer; text-align: center; transition: border-color 0.2s, background 0.2s; }
+.apk-drop:hover, .apk-drop.has-file { border-color: var(--accent); background: rgba(var(--tint-rgb), 0.09); }
+.apk-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.apk-drop .icon, .apk-drop svg { color: var(--accent-strong); }
+.apk-drop small { color: var(--muted); font-size: 12px; }
+.upload-progress { position: relative; height: 30px; border-radius: 12px; overflow: hidden; background: rgba(var(--tint-rgb), 0.08); border: 1px solid var(--line); }
+.upload-progress i { position: absolute; inset-block: 0; inset-inline-start: 0; background: linear-gradient(90deg, var(--accent-deep), var(--accent-strong)); transition: width 0.2s; }
+.upload-progress span { position: relative; display: grid; place-items: center; height: 100%; font-weight: 700; font-size: 12.5px; }
+.release-hero { display: grid; gap: 4px; padding: 6px 0 16px; }
+.release-hero b { font-size: 40px; line-height: 1; background: linear-gradient(135deg, var(--accent-strong), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; justify-self: start; }
+.release-hero small { color: var(--muted); }
+.release-hero p { margin: 8px 0 4px; white-space: pre-wrap; font-size: 13.5px; line-height: 1.7; }
+.release-help { padding: 12px 14px; border-radius: 14px; background: rgba(var(--tint-rgb), 0.06); border: 1px solid var(--line); line-height: 1.7; }
+.release-notes { max-width: 340px; white-space: pre-wrap; font-size: 13px; color: var(--muted); }

@@ -55,6 +55,7 @@ export function OfficeShell() {
     { to: "/complaints", label: "الشكاوى والرسائل", icon: "message", badge: openComplaints },
     { to: "/templates", label: "القوالب والتقارير", icon: "grid" },
     { to: "/rules", label: "الدوام والنقاط", icon: "star" },
+    { to: "/app-updates", label: "تحديثات التطبيق", icon: "refresh" },
   ];
 
   return (

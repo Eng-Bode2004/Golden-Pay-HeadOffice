@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "../auth";
 import { Ambient, Brand, Emblem, Icon } from "../components/ui";
 import { LoginPage } from "../pages/Login";
+import { AppUpdatesPage } from "./AppUpdates";
 import { AttendancePage } from "./Attendance";
 import { ComplaintsPage } from "./Complaints";
 import { ExpensesPage } from "./Expenses";
@@ -75,6 +76,7 @@ export function OfficeApp() {
         <Route path="expenses" element={<ExpensesPage />} />
         <Route path="complaints" element={<ComplaintsPage />} />
         <Route path="rules" element={<RulesPage />} />
+        <Route path="app-updates" element={<AppUpdatesPage />} />
         <Route path="templates" element={<TemplatesLibraryPage />} />
         <Route path="templates/versions/:versionId" element={<VersionWorkspacePage />} />
         <Route path="templates/:templateId" element={<TemplateDetailPage />} />

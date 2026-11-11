@@ -952,6 +952,33 @@ const english: Record<string, string> = {
   "لا ردود جديدة": "No new replies",
   "حضوري اليوم": "My attendance today",
   "إغلاق المحادثة": "Close conversation",
+  "تعذّر تحميل التحديثات.": "Could not load updates.",
+  "تعذّر رفع التحديث.": "Could not upload the update.",
+  "تعذّر الحذف.": "Could not delete.",
+  "تحديثات التطبيق": "App updates",
+  "تحديث بضغطة.": "Update in one tap.",
+  "دون إعادة التثبيت.": "No reinstalling.",
+  "ارفع ملف APK الجديد هنا. عند فتح التطبيق يظهر للمستعلم أن هناك تحديثًا، فيُنزَّل ويُثبَّت فوق النسخة الحالية مع الإبقاء على بياناته وتسجيل دخوله.": "Upload the new APK here. When investigators open the app they are told an update is ready; it downloads and installs over the current version, keeping their data and sign-in.",
+  "نشر إصدار جديد": "Publish a new version",
+  "اختر ملف APK": "Choose the APK file",
+  "من مجلد releases بعد تشغيل build-apk.sh": "From the releases folder after running build-apk.sh",
+  "رقم الإصدار": "Version",
+  "كود الإصدار (يجب أن يزيد عن السابق)": "Version code (must be higher than the last)",
+  "ما الجديد؟ (يظهر للمستعلم)": "What's new? (shown to investigators)",
+  "مثال: كتابة الفراغات داخل عبارات الإقرار، والدخول بحساب Google.": "e.g. Fill in the blanks of declarations, and sign in with Google.",
+  "تحديث إجباري (لا يمكن استخدام التطبيق قبل تثبيته)": "Required update (the app cannot be used until it is installed)",
+  "٪": "%",
+  "نشر التحديث": "Publish update",
+  "الإصدار الحالي": "Current version",
+  "بدون ملاحظات.": "No notes.",
+  "· إجباري": "· required",
+  "لم يُنشر أي إصدار بعد. التطبيقات المثبتة الآن ستعرض أول تحديث تنشره هنا.": "No version published yet. Installed apps will offer the first update you publish here.",
+  "مهم:": "Important:",
+  "يقبل Android التحديث فقط إذا وُقّع بنفس مفتاح النسخة المثبتة. ابنِ دائمًا بـ build-apk.sh على نفس الجهاز ومع نفس ملف key.properties.": "Android accepts an update only if it is signed with the same key as the installed app. Always build with build-apk.sh on the same machine with the same key.properties.",
+  "ما الجديد": "What's new",
+  "نُشر": "Published",
+  "إجباري": "Required",
+  "لا توجد إصدارات منشورة.": "No published versions.",
   "ثقة · أمان · خبرة": "Trust · Safety · Experience",
   "الاستعلامات": "Investigations", "النماذج": "Forms", "استعلام جديد": "New investigation", "أرسل استعلاماً.": "Send an investigation.", "خمس خطوات، ويصل الاستعلام إلى المستعلم المناسب فوراً.": "Five steps, and it reaches the right investigator at once.", "المُكلَّف": "Assign to", "المستعلم عنه": "Subject", "الجهة والنموذج": "Client & form", "المراجعة والإرسال": "Review & send", "كل من في المنطقة": "Everyone in the area", "يظهر لكل المستعلمين فيها، ويأخذه أول من يقبله.": "Offered to everyone there; the first to accept takes it.", "مستعلم محدد": "A specific investigator", "يصل مباشرة إلى شخص واحد تختاره.": "Goes straight to one person you choose.", "ابحث بالاسم أو الرقم الوظيفي": "Search by name or employee number", "لم يحدد منطقته بعد": "No work area set yet", "لا يوجد مستعلمون مطابقون.": "No matching investigators.", "اسم الشخص المطلوب الاستعلام عنه": "Name of the person to investigate", "العنوان بالتفصيل": "Full address", "علامة مميزة": "Landmark", "مرجع العميل": "Client reference", "ملاحظات للمستعلم": "Notes for the investigator", "البنوك": "Banks", "الشركات": "Companies", "نموذج": "forms", "نوع الاستعلام": "Investigation type", "حقل": "fields", "يُرسل إلى": "Send to", "العنوان": "Address", "المنطقة": "Area", "الجهة": "Client", "إرسال الاستعلام": "Send investigation", "تعذّر إرسال الاستعلام.": "Couldn't send the investigation.", "تعذّر تحميل الجهات.": "Couldn't load clients.", "تعذّر تحميل النماذج.": "Couldn't load forms.",
   "المحافظة": "Governorate", "المركز / القسم / المدينة": "District", "الوحدة المحلية القروية": "Local unit", "القرية الأم / الرئيسية": "Main village", "القرية التابعة / الكفر / العزبة / النجع": "Sub village", "اختر أو اكتب": "Choose or type", "اكتب الاسم": "Type the name", "بأسماء المناطق": "By place names", "دائرة على الخريطة": "Circle on the map", "رسم منطقة": "Draw an area", "اضغط على الخريطة لتحديد المركز، ثم اضبط نصف القطر.": "Click the map to set the centre, then adjust the radius.", "اضغط على الخريطة لرسم حدود المنطقة بثلاث نقاط أو أكثر.": "Click the map to outline the area with three or more points.", "مسح الرسم": "Clear drawing", "لا يوجد مستعلم متاح في هذه المنطقة": "No investigator available in this area",
@@ -984,6 +1011,7 @@ export function translate(value: string): string {
   if (/^(\d+) رد جديد من الإدارة العليا$/.test(key)) return key.replace(/^(\d+) .*$/, "$1 new replies from head office");
   if (/^حضرت (.+) — في الموعد$/.test(key)) return key.replace(/^حضرت (.+) — في الموعد$/, "Arrived $1 — on time");
   if (/^حضرت (.+) — تأخير (\d+) دقيقة$/.test(key)) return key.replace(/^حضرت (.+) — تأخير (\d+) دقيقة$/, "Arrived $1 — $2 min late");
+  if (/^نُشر الإصدار (.+)\. سيظهر التحديث للمستعلمين عند فتح التطبيق\.$/.test(key)) return key.replace(/^نُشر الإصدار (.+)\. .*$/, "Version $1 published. Investigators will see the update when they open the app.");
   if (/^(\d+) سلبي · (\d+) ملغي$/.test(key)) return key.replace(/^(\d+) سلبي · (\d+) ملغي$/, "$1 negative · $2 cancelled");
   if (/^(\S+) د$/.test(key)) return key.replace(/^(\S+) د$/, "$1 min");
   if (/^(\S+) ث$/.test(key)) return key.replace(/^(\S+) ث$/, "$1 s");
