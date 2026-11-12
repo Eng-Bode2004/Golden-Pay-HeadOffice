@@ -1103,6 +1103,18 @@ export function Mapper({
                     حذف النقطة
                   </button>
                 )}
+                {onPlace && !slot.anchor.startsWith("gp_u") && slot.kind !== "checkbox" && !binding && (
+                  <button
+                    className="btn small ghost tpl-danger"
+                    title="يبقى نص العميل كما هو؛ يُزال المكان فقط"
+                    onClick={async () => {
+                      if (!window.confirm("إزالة هذا المكان؟ يبقى نص العميل كما هو في التصميم، ويمكنك التراجع.")) return;
+                      if (await onPlace({ op: "remove", anchor: slot.anchor, part: slot.part, paragraph: 0, offset: 0 })) setSelected(null);
+                    }}
+                  >
+                    إزالة المكان
+                  </button>
+                )}
               </div>
             )}
           </div>
