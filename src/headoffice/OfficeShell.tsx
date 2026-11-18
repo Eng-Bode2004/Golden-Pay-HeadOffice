@@ -53,6 +53,7 @@ export function OfficeShell() {
     { to: "/payroll", label: "الرواتب", icon: "badge" },
     { to: "/expenses", label: "المصروفات", icon: "file" },
     { to: "/complaints", label: "الشكاوى والرسائل", icon: "message", badge: openComplaints },
+    { to: "/pricing", label: "الأسعار", icon: "tag" },
     { to: "/templates", label: "القوالب والتقارير", icon: "grid" },
     { to: "/rules", label: "الدوام والنقاط", icon: "star" },
     { to: "/app-updates", label: "تحديثات التطبيق", icon: "refresh" },

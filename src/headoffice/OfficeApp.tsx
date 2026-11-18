@@ -9,6 +9,7 @@ import { ExpensesPage } from "./Expenses";
 import { OfficeOverviewPage } from "./OfficeOverview";
 import { OfficeShell } from "./OfficeShell";
 import { PayrollPage } from "./Payroll";
+import { PricingPage } from "./Pricing";
 import { RulesPage } from "./Rules";
 import { StaffPage } from "./Staff";
 import { StaffProfilePage } from "./StaffProfile";
@@ -75,6 +76,7 @@ export function OfficeApp() {
         <Route path="payroll" element={<PayrollPage />} />
         <Route path="expenses" element={<ExpensesPage />} />
         <Route path="complaints" element={<ComplaintsPage />} />
+        <Route path="pricing" element={<PricingPage />} />
         <Route path="rules" element={<RulesPage />} />
         <Route path="app-updates" element={<AppUpdatesPage />} />
         <Route path="templates" element={<TemplatesLibraryPage />} />
