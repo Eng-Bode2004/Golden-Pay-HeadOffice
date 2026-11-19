@@ -676,3 +676,55 @@ html[lang="en"] .account-back svg { transform: none; }
 .case-check li span { flex-shrink: 0; padding: 1px 7px; border-radius: 6px; font-size: 10.5px; color: var(--muted); background: rgba(255, 255, 255, 0.06); }
 .case-check li.k-unsupported_statement span, .case-check li.k-missing span { color: var(--danger); background: rgba(255, 178, 182, 0.1); }
 .case-check li.k-unplaced span { color: #9ec5ff; background: rgba(158, 197, 255, 0.1); }
+
+/* A checkbox with its label beside it (not a full-width input). */
+.field.checkbox-field { flex-direction: row; align-items: flex-start; gap: 10px; cursor: pointer; }
+.field.checkbox-field input { width: auto; flex: none; margin-top: 3px; accent-color: var(--danger); }
+.danger-card { border-color: rgba(255, 138, 128, 0.32); }
+.danger-card .reset-counts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 14px; margin: 10px 0 14px; font-size: 13px; }
+.danger-card .reset-counts b { color: var(--danger); font-variant-numeric: tabular-nums; }
+
+.side-stack { display: grid; gap: 22px; align-content: start; }
+
+/* Banks and companies an investigator works for */
+.clients-picker { display: grid; gap: 14px; margin-bottom: 14px; }
+.clients-group-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 13px; }
+.clients-group-head b { color: var(--gold-2); font-weight: 600; letter-spacing: 0.01em; }
+.link-button { background: none; border: 0; padding: 0; color: var(--gold); font: inherit; font-size: 12.5px; cursor: pointer; }
+.link-button:hover { color: var(--gold-2); text-decoration: underline; }
+.client-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.client-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 999px;
+  border: 1px solid var(--line); background: rgba(255, 255, 255, 0.03); color: var(--muted);
+  font: inherit; font-size: 13px; cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+.client-chip:hover:not(:disabled) { border-color: rgba(217, 194, 160, 0.45); color: var(--ink); transform: translateY(-1px); }
+.client-chip.on {
+  border-color: rgba(217, 194, 160, 0.7); color: var(--bg);
+  background: linear-gradient(135deg, var(--gold-2), var(--gold));
+  box-shadow: 0 6px 18px -10px rgba(217, 194, 160, 0.9);
+}
+.client-chip:disabled { opacity: 0.55; cursor: default; }
+.clients-summary { margin: 0; }
+.badge.off-badge { color: var(--muted-2); border-color: var(--line); }
+@media (prefers-reduced-motion: reduce) { .client-chip { transition: none; } .client-chip:hover:not(:disabled) { transform: none; } }
+.finance-grid.single { grid-template-columns: minmax(0, 1fr); }
+
+/* Excuses after accepting (head office) */
+.excuses-panel { margin-bottom: 18px; }
+.excuse-list { list-style: none; margin: 0; padding: 0 22px 18px; display: grid; gap: 10px; }
+.excuse-list li { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; background: rgba(255, 255, 255, 0.025); }
+.excuse-list li > div:first-child { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.excuse-who { color: var(--gold-2); font-weight: 600; text-decoration: none; }
+.excuse-who:hover { text-decoration: underline; }
+.excuse-list p { margin: 6px 0; color: var(--muted); font-size: 13.5px; line-height: 1.6; }
+.excuse-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 12.5px; }
+.badge.danger-badge { color: var(--danger); border-color: rgba(255, 138, 128, 0.4); }
+
+/* Admin replaces the report with an edited file */
+.report-edit { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 15px; border-radius: 15px; border: 1px dashed rgba(var(--tint-rgb), 0.35); }
+.report-edit > div { flex: 1; min-width: 200px; display: grid; gap: 3px; }
+.report-edit small { color: var(--muted); font-size: 12.5px; line-height: 1.6; }
+.report-edit label.btn { cursor: pointer; }
+.report-edit label.btn.disabled { opacity: 0.55; pointer-events: none; }

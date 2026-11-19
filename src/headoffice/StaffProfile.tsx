@@ -10,6 +10,7 @@ import {
   type AttendanceDay,
   type PointRow,
 } from "../components/Points";
+import { InvestigatorClientsPanel } from "../components/ClientsPicker";
 import { Avatar, date, ErrorMessage, Icon, number } from "../components/ui";
 import { GROUP_LABEL, hoursLabel, percent, type PointRules, type Schedule, type StaffMonth } from "./types";
 
@@ -152,6 +153,12 @@ export function StaffProfilePage() {
           </p>
         </article>
       </div>
+
+      {person?.staff_group === "investigator" && (
+        <div className="finance-grid single">
+          <InvestigatorClientsPanel userId={id} />
+        </div>
+      )}
 
       <div className="finance-grid">
         <section className="glass panel">

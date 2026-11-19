@@ -2,11 +2,17 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "../auth";
 import { Ambient, Brand, Emblem, Icon } from "../components/ui";
 import { LoginPage } from "../pages/Login";
+import { lazy, Suspense } from "react";
+import { PeoplePage } from "../pages/People";
+import { RequestsPage } from "../pages/Requests";
+
+const InvestigatorProfilePage = lazy(() => import("../pages/InvestigatorProfile"));
 import { AppUpdatesPage } from "./AppUpdates";
 import { AttendancePage } from "./Attendance";
 import { ComplaintsPage } from "./Complaints";
 import { ExpensesPage } from "./Expenses";
 import { OfficeOverviewPage } from "./OfficeOverview";
+import { ExcusesPanel } from "./Excuses";
 import { OfficeShell } from "./OfficeShell";
 import { PayrollPage } from "./Payroll";
 import { PricingPage } from "./Pricing";
@@ -70,6 +76,16 @@ export function OfficeApp() {
     <Routes>
       <Route path="/" element={<OfficeShell />}>
         <Route index element={<OfficeOverviewPage />} />
+        <Route path="requests" element={<RequestsPage />} />
+        <Route path="investigators" element={<><ExcusesPanel /><PeoplePage /></>} />
+        <Route
+          path="investigators/:id"
+          element={
+            <Suspense fallback={null}>
+              <InvestigatorProfilePage />
+            </Suspense>
+          }
+        />
         <Route path="staff" element={<StaffPage />} />
         <Route path="staff/:id" element={<StaffProfilePage />} />
         <Route path="attendance" element={<AttendancePage />} />
