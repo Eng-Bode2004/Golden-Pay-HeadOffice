@@ -2,6 +2,7 @@ import { initAppearance } from "./themes";
 
 const english: Record<string, string> = {
   // Head Office templates and versioned client forms
+  "تراجعها الإدارة العليا": "Reviewed by head office",
   "ما الذي عدّلته؟ (اختياري — يظهر في سجل الاستعلام)": "What did you change? (optional — shown in the case history)",
   "تعذّر رفع التقرير المعدّل.": "Couldn't upload the edited report.",
   "إعادة إنشاء التقرير من إجابات المستعلم؟ ستُستبدل النسخة المعدّلة التي رفعتها.": "Rebuild the report from the investigator's answers? The edited copy you uploaded will be replaced.",
