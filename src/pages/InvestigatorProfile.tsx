@@ -220,9 +220,14 @@ export default function InvestigatorProfilePage() {
       </div>
       <div className="metrics-grid profile-metrics">
         {[
-          { label: `أرباح ${monthLabel(month)}`, value: money(stats?.earned_month), hint: `${number(stats?.approved_month ?? 0)} تقرير معتمد` },
-          { label: "إجمالي الأرباح", value: money(stats?.earned_total), hint: `بانتظار الاعتماد ${money(stats?.pending_earnings)}` },
-          { label: "إيرادات حققها للشركة", value: money(stats?.revenue_total), hint: "من التقارير المعتمدة" },
+          // Money is head office's; administrators see the work, not the pay.
+          ...(office
+            ? [
+                { label: `أرباح ${monthLabel(month)}`, value: money(stats?.earned_month), hint: `${number(stats?.approved_month ?? 0)} تقرير معتمد` },
+                { label: "إجمالي الأرباح", value: money(stats?.earned_total), hint: `بانتظار الاعتماد ${money(stats?.pending_earnings)}` },
+                { label: "إيرادات حققها للشركة", value: money(stats?.revenue_total), hint: "من التقارير المعتمدة" },
+              ]
+            : []),
           { label: "إجمالي الاستعلامات", value: number(stats?.total ?? 0), hint: `${number(stats?.approved ?? 0)} معتمد · ${number(stats?.active ?? 0)} قيد العمل` },
           { label: "الالتزام بالموعد", value: percent(stats?.on_time ?? 0, stats?.with_deadline ?? 0), hint: `${number(stats?.overdue ?? 0)} متأخر الآن` },
           { label: "متوسط مدة الإنجاز", value: minutesLabel(stats?.avg_hours == null ? null : stats.avg_hours * 60), hint: "من القبول حتى الإرسال" },
@@ -268,12 +273,14 @@ export default function InvestigatorProfilePage() {
       </div>
 
       <div className="finance-grid">
-        <section className="glass panel finance-trend">
-          <div className="panel-heading">
-            <h2>الأرباح الشهرية</h2>
-          </div>
-          <TrendBars rows={perf?.trend ?? []} series={[{ key: "payouts", label: "أرباح المستعلم", tone: "accent" }]} />
-        </section>
+        {office && (
+          <section className="glass panel finance-trend">
+            <div className="panel-heading">
+              <h2>الأرباح الشهرية</h2>
+            </div>
+            <TrendBars rows={perf?.trend ?? []} series={[{ key: "payouts", label: "أرباح المستعلم", tone: "accent" }]} />
+          </section>
+        )}
         <section className="glass panel">
           <div className="panel-heading">
             <h2>مناطق العمل{(area?.areas?.length ?? 0) > 1 ? ` (${number(area!.areas!.length)})` : ""}</h2>
@@ -355,7 +362,7 @@ export default function InvestigatorProfilePage() {
                 <th>أرسل التقرير</th>
                 <th>اعتُمد</th>
                 <th>من المشاهدة للإنجاز</th>
-                <th>الأجر</th>
+                {office && <th>الأجر</th>}
               </tr>
             </thead>
             <tbody>
@@ -398,7 +405,7 @@ export default function InvestigatorProfilePage() {
                     {row.response === "accepted" && row.status === "approved" ? <Stamp at={row.reviewed_at} after={row.submitted_at} /> : "—"}
                   </td>
                   <td>{row.response === "accepted" ? between(row.seen_at ?? row.offered_at, row.submitted_at) : "—"}</td>
-                  <td>{money(row.investigator_price)}</td>
+                  {office && <td>{money(row.investigator_price)}</td>}
                 </tr>
               ))}
             </tbody>
